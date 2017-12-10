@@ -30,7 +30,7 @@ public class TestMdns
 			mc.bind(new InetSocketAddress(5353));
 
 
-			ByteBuffer buf = ByteBuffer.allocate(128);
+			ByteBuffer buf = ByteBuffer.allocate(512);
 
 			MembershipKey key = mc.join(group, ni);
 			//dc.connect(new InetSocketAddress("224.0.0.251", 5353));
@@ -42,7 +42,7 @@ public class TestMdns
 					// read함수를 쓸 경우 connect를 요구한다
 					SocketAddress sender = mc.receive(buf);
 					buf.flip();
-					System.out.println("sender=" + sender + "\n" + ByteBufferUtils.serialize(buf));
+					System.out.println("sender=" + sender + "\n" + ByteBufferUtils.toHexString(buf, 32));
 					buf.clear();
 				}
 				else
@@ -62,4 +62,10 @@ public class TestMdns
 			try { mc.close(); } catch(Exception e) { }
 		}
 	}
+
+	private void sendInfo()
+	{
+
+	}
+
 }
