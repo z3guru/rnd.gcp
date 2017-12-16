@@ -72,8 +72,8 @@ public class TestMdns
 	public void testJmDNS() throws IOException
 	{
 		//
-		ToolKit.defaultWorkerPool().execute("monitor", new MonitorJob());
-		try { Thread.sleep(1000); } catch(InterruptedException e) { }
+		//ToolKit.defaultWorkerPool().execute("monitor", new MonitorJob());
+		//try { Thread.sleep(1000); } catch(InterruptedException e) { }
 
 		//
 		String txt = new StringBuilder()
@@ -103,7 +103,13 @@ public class TestMdns
 		System.out.println("unregisterAllServices");
 	}
 
-	private class MonitorJob implements JobRunnable
+	@Test
+	public void testJmDNS2() throws IOException
+	{
+	}
+
+
+		private class MonitorJob implements JobRunnable
 	{
 
 		@Override
