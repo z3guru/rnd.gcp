@@ -18,7 +18,7 @@ import java.util.concurrent.RejectedExecutionException;
 
 public class PrivetService implements JobRunnable
 {
-	private final Logger logger = LogManager.getContext().getLogger(NioReadTool.class.getName());
+	private final Logger logger = LogManager.getContext().getLogger(PrivetService.class.getName());
 
 	/** jetty embedded server */
 	private Server server;
@@ -27,6 +27,7 @@ public class PrivetService implements JobRunnable
 
 	public void start()
 	{
+		logger.info("start service");
 		this.worker = ToolKit.defaultWorkerPool().execute("privet service", this);
 	}
 
@@ -50,6 +51,8 @@ public class PrivetService implements JobRunnable
 			this.server.setConnectors(new Connector[] {c});
 
 			ServletHandler handler = new ServletHandler();
+			handler.addServletWithMapping(RegisterServlet.class, "/register");
+			handler.addServletWithMapping(RegisterServlet.class, "/privet/register");
 			handler.addServletWithMapping(InfoServlet.class, "/privet/info");
 			this.server.setHandler(handler);
 			this.server.start();

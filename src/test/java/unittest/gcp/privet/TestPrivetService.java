@@ -14,6 +14,6 @@ public class TestPrivetService
 		PrivetService svc = new PrivetService();
 		svc.start();
 
-		try { Thread.sleep(20000); } catch(InterruptedException e) { }
+		try { Thread.sleep(60000); } catch(InterruptedException e) { }
 	}
 }

@@ -1,5 +1,6 @@
 package prototype.mdns;
 
+import guru.z3.rnd.gcp.privet.PrivetService;
 import guru.z3.temple.toolkit.ToolKit;
 import guru.z3.temple.toolkit.concurrent.JobRunnable;
 import guru.z3.temple.toolkit.nio.ByteBufferUtils;
@@ -12,6 +13,8 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.MembershipKey;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.RejectedExecutionException;
 
 public class TestMdns
@@ -281,33 +284,33 @@ public class TestMdns
 	@Test
 	public void testJmDNS() throws IOException
 	{
-		//
-		//ToolKit.defaultWorkerPool().execute("monitor", new MonitorJob());
-		//try { Thread.sleep(1000); } catch(InterruptedException e) { }
+		PrivetService psvc = new PrivetService();
+		psvc.start();
 
 		//
-		String txt = new StringBuilder()
-						 .append("txtvers=1")
-						 .append(", ty=Zcube RND Cloud Printer Model A")
-						 .append(", url=https://www.google.com/cloudprint")
-						 .append(", type=printer")
-						 .append(", id=")
-						 .append(", cs=offline")
-						 .toString();
+		Map<String,String> txts = new HashMap();
+		txts.put("txtvers", "1");
+		txts.put("ty", "ZCUBE PRINTER");
+		txts.put("url", "https://www.google.com/cloudprint");
+		txts.put("type", "printer");
+		txts.put("id", "");
+		txts.put("cs", "online");
 
 		String name = "ZCUBE";
 		String typePrivet = "._privet._tcp.local";
 		String typePrinter = "._printer._sub._privet._tcp.local";
 
 		//ServiceInfo svc = ServiceInfo.create(name + typePrinter, name, 5353, txt);
-		ServiceInfo svc = ServiceInfo.create(typePrivet, name, typePrinter, 5353, txt);
+		ServiceInfo svc = ServiceInfo.create(typePrivet, name, typePrinter, 5353, 1, 1, txts);
+		//svc.setText(txts);
+
 		//JmmDNS jmDNS = JmmDNS.Factory.getInstance();
 		JmDNS jmdns = JmDNS.create(InetAddress.getLocalHost());
 
 		try { Thread.sleep(1000); } catch(InterruptedException e) { }
 		jmdns.registerService(svc);
 
-		try { Thread.sleep(20000); } catch(InterruptedException e) { }
+		try { Thread.sleep(60000); } catch(InterruptedException e) { }
 		System.out.println("Advertise SERVICE");
 
 		jmdns.unregisterAllServices();
