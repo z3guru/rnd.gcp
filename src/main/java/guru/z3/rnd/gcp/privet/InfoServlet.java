@@ -3,6 +3,7 @@ This work is licensed under the Creative Commons Attribution-NoDerivatives 4.0 I
 */
 package guru.z3.rnd.gcp.privet;
 
+import guru.z3.rnd.gcp.google.GoogleContext;
 import guru.z3.temple.toolkit.nio.NioReadTool;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,14 +41,17 @@ public class InfoServlet extends HttpServlet
 		logger.info("/privet/info::params ===========" + paramStr);
 
 		logger.info("InfoServlet is called");
-		String info = new StringBuilder()
+		GoogleContext gtx = GoogleContext.getContext();
+		boolean registered = gtx.getPrinter() == null ? false : true;
+
+		StringBuilder info = new StringBuilder()
 						.append("{")
        					.append("\"version\": \"1.0\",")
-						.append("\"name\": \"ZCUBEs printer\",")
+						.append("\"name\": \"ZCUBEPRINTER\",")
 						.append("\"description\": \"for studying GCP\",")
 						.append("\"url\": \"https://www.google.com/cloudprint\",")
 						.append("\"type\": [\"printer\"],")
-						.append("\"id\": \"\",")
+						.append("\"id\":\"").append(registered ? gtx.getPrinter().getId() : "").append("\",")
 						.append("\"device_state\": \"idle\",")
 						.append("\"connection_state\": \"online\",")
 						.append("\"manufacturer\": \"Zcube\",")
@@ -59,17 +63,24 @@ public class InfoServlet extends HttpServlet
 						.append("\"support_url\": \"http://support.google.com/cloudprint/?hl=en\",")
 						.append("\"update_url\": \"http://support.google.com/cloudprint/?hl=en\",")
 						.append("\"x-privet-token\": \"AIp06DjQd80yMoGYuGmT_VDAApuBZbInsQ:1358377509659\",")
-						.append("\"api\": [")
-						.append("\"/privet/register\",")
-						//.append("\"/privet/accesstoken\",")
-						//.append("\"/privet/capabilities\",")
-						//.append("\"/privet/printer/submitdoc\"")
-						.append("]")
-						.append("}")
-						.toString();
+						.append("\"api\": [");
+
+		if ( registered )
+		{
+			info.append("\"/privet/capabilities\",");
+			info.append("\"/privet/printer/submitdoc\"");
+		}
+		else
+		{
+			info.append("\"/privet/register\",");
+		}
+
+		info.append("]}");
+
+		logger.info("/privet/info::contents ===========\n" + info);
 
 		res.setContentType("application/json");
 		res.setStatus(HttpServletResponse.SC_OK);
-		res.getWriter().println(info);
+		res.getWriter().println(info.toString());
 	}
 }

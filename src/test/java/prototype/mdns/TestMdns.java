@@ -1,5 +1,6 @@
 package prototype.mdns;
 
+import guru.z3.rnd.gcp.google.GoogleContext;
 import guru.z3.rnd.gcp.privet.PrivetService;
 import guru.z3.temple.toolkit.ToolKit;
 import guru.z3.temple.toolkit.concurrent.JobRunnable;
@@ -8,6 +9,7 @@ import org.junit.Test;
 
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
+import javax.jmdns.impl.JmDNSImpl;
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
@@ -38,7 +40,7 @@ public class TestMdns
 			mc.bind(new InetSocketAddress(5353));
 
 
-			ByteBuffer buf = ByteBuffer.allocate(512);
+			ByteBuffer buf = ByteBuffer.allocate(1024);
 
 			MembershipKey key = mc.join(group, ni);
 			//dc.connect(new InetSocketAddress("224.0.0.251", 5353));
@@ -74,7 +76,7 @@ public class TestMdns
 	@Test
 	public void testmDns2()
 	{
-		System.out.println(ByteBufferUtils.toHexString(buildAnswer2(), 32));
+		System.out.println(ByteBufferUtils.toHexString(buildAnswer(), 32));
 	}
 
 	@Test
@@ -82,11 +84,14 @@ public class TestMdns
 	{
 		DatagramChannel mc = null;
 
+		PrivetService psvc = new PrivetService();
+		psvc.start();
+
 		try
 		{
 			InetAddress addr = InetAddress.getByName("127.0.0.1");
 			InetAddress group = InetAddress.getByName("224.0.0.251");
-			NetworkInterface ni = NetworkInterface.getByName("en1");
+			NetworkInterface ni = NetworkInterface.getByName("en9");
 
 			// "StandardProtocolFamily.INET"을 생략하면
 			// 예외가 발생함 ==> IPv6 socket cannot join IPv4 multicast group
@@ -100,6 +105,8 @@ public class TestMdns
 
 			MembershipKey key = mc.join(group, ni);
 			//mc.connect(new InetSocketAddress("224.0.0.251", 5353));
+			SocketAddress mdnsAddr = new InetSocketAddress("224.0.0.251", 5353);
+			mc.send(buildAnswer(), mdnsAddr);
 
 			while (true)
 			{
@@ -113,7 +120,7 @@ public class TestMdns
 					if ( hh == 0x00000000 )
 					{
 						System.out.println("sending answer");
-						mc.write(buildAnswer2());
+						//mc.send(buildAnswer(), sender);
 					}
 				}
 				else
@@ -138,13 +145,13 @@ public class TestMdns
 	private ByteBuffer buildAnswer()
 	{
 		ByteBuffer buf = ByteBuffer.allocate(1024);
-		buf.putInt(0x00008400);
-		buf.putShort((short)0);
-		buf.putShort((short)3);
-		buf.putShort((short)0);
-		buf.putShort((short)0);
+		buf.putInt(0x00008000);
+		buf.putShort((short)0);	// NO Questions
+		buf.putShort((short)5);	// 5 Answers
+		buf.putShort((short)0);	// 0 Authority RR
+		buf.putShort((short)0);	// 0 Additional RR
 
-		String printerName = "ZCUBE-PRINTER";
+		String printerName = GoogleContext.getContext().getPrinterName();
 		String[] privetNames = new String[] { "_privet", "_tcp", "local" };
 		String[] subtypeNames = new String[] { "_printer", "_sub" };
 
@@ -164,57 +171,156 @@ public class TestMdns
 		buf.putInt(120);				// TTL = 120sec
 		buf.putShort((short)(1 + printerName.length() + 2));	// RD Length
 
-		buf.put((byte)printerName.length());
-		for ( int i = 0; i < printerName.length(); i++ ) buf.put((byte)printerName.charAt(i));
-		buf.put((byte)0xC0);
-		buf.put((byte)pos);
+		ByteBuffer prtNameBuf = ByteBuffer.allocate(1024);
+		prtNameBuf.put((byte)printerName.length());
+		for ( int i = 0; i < printerName.length(); i++ ) prtNameBuf.put((byte)printerName.charAt(i));
+		prtNameBuf.put((byte)0xC0);
+		prtNameBuf.put((byte)pos);
 
-		// 2nd answer ======
-		int pos2 = buf.position();   // 나중 포인터를 위해
+		prtNameBuf.flip();
+		buf.put(prtNameBuf.duplicate());
 
-		for ( String n : subtypeNames )
+
+		// 2nd answer : TXT ======
+		buf.put(prtNameBuf.duplicate());
+
+		buf.putShort((short)0x0010);	// TYPE = TXT
+		buf.putShort((short)0x0001);	// CLASS = IN
+		buf.putInt(120);				// TTL = 120sec
+
+		String[] txt = new String[] {
+			  	  "txtvers=1"
+				, "ty=Zcube RND Printer"
+				, "url=https://www.google.com/cloudprint"
+				, "type=printer"
+				, "id="
+		};
+
+		int len = 0;
+		for ( String t : txt ) len += (t.length() + 1);
+		buf.putShort((short)len);		// RD Length
+
+		for ( String t : txt )
+		{
+			buf.put((byte)t.length());
+			buf.put(t.getBytes());
+		}
+
+		// 3rd answer : SRV ======
+		buf.put(prtNameBuf.duplicate());
+
+		buf.putShort((short)0x0021);	// TYPE = SRV
+		buf.putShort((short)0x0001);	// CLASS = IN
+		buf.putInt(120);				// TTL = 120sec
+
+		ByteBuffer hostnameBuf = ByteBuffer.allocate(1024);
+		hostnameBuf.put((byte)printerName.length());
+		hostnameBuf.put(printerName.getBytes());
+		hostnameBuf.put((byte)"local".length());
+		hostnameBuf.put("local".getBytes());
+		hostnameBuf.put((byte)0x00); // end...
+		hostnameBuf.flip();
+
+		buf.putShort((short)(hostnameBuf.remaining() + 6));	// RD Length
+
+		buf.putShort((short)0);	// priority
+		buf.putShort((short)0);	// weight
+		buf.putShort((short)8090);	// port
+		buf.put(hostnameBuf.duplicate());
+
+
+		// 4th answer : A ======
+		buf.put(hostnameBuf.duplicate());
+
+		buf.putShort((short)0x0001);	// TYPE = A
+		buf.putShort((short)0x0001);	// CLASS = IN
+		buf.putInt(120);				// TTL = 120sec
+
+		buf.putShort((short)0x04);		// RD Length
+		buf.putInt(0x7F000001);	// 127.0.0.1
+
+
+		// 4th answer : AAAA ======
+		buf.put(hostnameBuf.duplicate());
+
+		buf.putShort((short)0x0001);	// TYPE = A
+		buf.putShort((short)0x0001);	// CLASS = IN
+		buf.putInt(120);				// TTL = 120sec
+
+		buf.putShort((short)0x10);		// RD Length
+		buf.putInt(0x7F000001);	// 127.0.0.1
+		buf.putInt(0x7F000001);
+		buf.putInt(0x7F000001);
+		buf.putInt(0x7F000001);
+
+		buf.flip();
+		return buf;
+	}
+
+	private ByteBuffer buildGoodbye()
+	{
+		ByteBuffer buf = ByteBuffer.allocate(1024);
+		buf.putInt(0x00008000);
+		buf.putShort((short)0);	// NO Questions
+		buf.putShort((short)2);	// 2 Answers
+		buf.putShort((short)0);	// 0 Authority RR
+		buf.putShort((short)0);	// 0 Additional RR
+
+		String printerName = GoogleContext.getContext().getPrinterName();
+		String[] privetNames = new String[] { "_privet", "_tcp", "local" };
+		String[] subtypeNames = new String[] { "_printer", "_sub" };
+
+		// 1st answer ======
+		int pos = buf.position();   // 나중 포인터를 위해
+
+		for ( String n : privetNames )
 		{
 			int len = n.length();
 			buf.put((byte)len);
 			for ( int i = 0; i < len; i++ ) buf.put((byte)n.charAt(i));
 		}
-		buf.put((byte)0xC0);
-		buf.put((byte)pos);
+		buf.put((byte)0x00);		// end of Name
 
 		buf.putShort((short)0x000C);	// TYPE = PTR
 		buf.putShort((short)0x0001);	// CLASS = IN
-		buf.putInt(120);				// TTL = 120sec
+		buf.putInt(0);					// TTL = 0sec
 		buf.putShort((short)(1 + printerName.length() + 2));	// RD Length
 
-		int pos3 = buf.position();   // 나중 포인터를 위해
-		buf.put((byte)printerName.length());
-		for ( int i = 0; i < printerName.length(); i++ ) buf.put((byte)printerName.charAt(i));
-		buf.put((byte)0xC0);
-		buf.put((byte)pos2);
+		ByteBuffer prtNameBuf = ByteBuffer.allocate(1024);
+		prtNameBuf.put((byte)printerName.length());
+		for ( int i = 0; i < printerName.length(); i++ ) prtNameBuf.put((byte)printerName.charAt(i));
+		prtNameBuf.put((byte)0xC0);
+		prtNameBuf.put((byte)pos);
 
+		prtNameBuf.flip();
+		buf.put(prtNameBuf.duplicate());
 
-		// 3rd answer ======
-		buf.put((byte)0xC0);
-		buf.put((byte)pos3);
+		// 2nd answer : SRV ======
+		buf.put(prtNameBuf.duplicate());
 
-		String txt = new StringBuilder()
-				.append("txtvers=1")
-				.append(", ty=Zcube RND Cloud Printer Model A")
-				.append(", url=https://www.google.com/cloudprint")
-				.append(", type=printer")
-				.append(", id=")
-				.append(", cs=offline")
-				.toString();
-
-		buf.putShort((short)0x0010);	// TYPE = TXT
+		buf.putShort((short)0x0021);	// TYPE = SRV
 		buf.putShort((short)0x0001);	// CLASS = IN
-		buf.putInt(120);				// TTL = 120sec
-		buf.putShort((short)txt.length());	// RD Length
-		for ( int i = 0; i < txt.length(); i++ ) buf.put((byte)txt.charAt(i));
+		buf.putInt(0);					// TTL = 0sec
+
+		ByteBuffer hostnameBuf = ByteBuffer.allocate(1024);
+		hostnameBuf.put((byte)printerName.length());
+		hostnameBuf.put(printerName.getBytes());
+		hostnameBuf.put((byte)"local".length());
+		hostnameBuf.put("local".getBytes());
+		hostnameBuf.put((byte)0x00); // end...
+		hostnameBuf.flip();
+
+		buf.putShort((short)(hostnameBuf.remaining() + 6));	// RD Length
+
+		buf.putShort((short)0);	// priority
+		buf.putShort((short)0);	// weight
+		buf.putShort((short)8080);	// port
+		buf.put(hostnameBuf.duplicate());
 
 		buf.flip();
 		return buf;
 	}
+
 
 	private ByteBuffer buildAnswer2()
 	{
@@ -305,7 +411,7 @@ public class TestMdns
 		//svc.setText(txts);
 
 		//JmmDNS jmDNS = JmmDNS.Factory.getInstance();
-		JmDNS jmdns = JmDNS.create(InetAddress.getLocalHost());
+		JmDNSImpl jmdns = (JmDNSImpl)JmDNS.create(InetAddress.getLocalHost());
 
 		try { Thread.sleep(1000); } catch(InterruptedException e) { }
 		jmdns.registerService(svc);
