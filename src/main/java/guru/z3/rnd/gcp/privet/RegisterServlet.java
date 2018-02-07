@@ -3,7 +3,9 @@ This work is licensed under the Creative Commons Attribution-NoDerivatives 4.0 I
 */
 package guru.z3.rnd.gcp.privet;
 
+import guru.z3.rnd.gcp.PrinterContext;
 import guru.z3.rnd.gcp.google.GoogleContext;
+import guru.z3.rnd.gcp.google.PrinterVO;
 import guru.z3.rnd.gcp.google.RegistrationVO;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,7 +68,8 @@ public class RegisterServlet extends HttpServlet
 		}
 		else if ( "getClaimToken".equals(action) )
 		{
-			RegistrationVO rr = gtx.register();
+			gtx.register();
+			RegistrationVO rr = PrinterContext.getInstance().getRegistration();
 
 			result = new StringBuilder()
 					.append("{\"action\":\"").append(action)
@@ -83,10 +86,11 @@ public class RegisterServlet extends HttpServlet
 				logger.warn(e.getMessage(), e);
 			}
 
+			PrinterVO pp = PrinterContext.getInstance().getPrinter();
 			result = new StringBuilder()
 					.append("{\"action\":\"").append(action)
 					.append("\", \"user\":\"").append(user)
-					.append("\", \"device_id\":\"").append(gtx.getPrinter().getId()).append("\"}")
+					.append("\", \"device_id\":\"").append(pp.getId()).append("\"}")
 					.toString();
 		}
 

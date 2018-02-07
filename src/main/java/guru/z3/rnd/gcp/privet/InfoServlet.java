@@ -3,6 +3,7 @@ This work is licensed under the Creative Commons Attribution-NoDerivatives 4.0 I
 */
 package guru.z3.rnd.gcp.privet;
 
+import guru.z3.rnd.gcp.PrinterContext;
 import guru.z3.rnd.gcp.google.GoogleContext;
 import guru.z3.temple.toolkit.nio.NioReadTool;
 import org.apache.logging.log4j.LogManager;
@@ -40,9 +41,8 @@ public class InfoServlet extends HttpServlet
 		}
 		logger.info("/privet/info::params ===========" + paramStr);
 
-		logger.info("InfoServlet is called");
-		GoogleContext gtx = GoogleContext.getContext();
-		boolean registered = gtx.getPrinter() == null ? false : true;
+		PrinterContext pctx = PrinterContext.getInstance();
+		boolean registered = pctx.getPrinter() == null ? false : true;
 
 		StringBuilder info = new StringBuilder()
 						.append("{")
@@ -51,7 +51,7 @@ public class InfoServlet extends HttpServlet
 						.append("\"description\": \"for studying GCP\",")
 						.append("\"url\": \"https://www.google.com/cloudprint\",")
 						.append("\"type\": [\"printer\"],")
-						.append("\"id\":\"").append(registered ? gtx.getPrinter().getId() : "").append("\",")
+						.append("\"id\":\"").append(registered ? pctx.getPrinter().getId() : "").append("\",")
 						.append("\"device_state\": \"idle\",")
 						.append("\"connection_state\": \"online\",")
 						.append("\"manufacturer\": \"Zcube\",")

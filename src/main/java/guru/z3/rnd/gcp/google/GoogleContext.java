@@ -3,7 +3,9 @@ This work is licensed under the Creative Commons Attribution-NoDerivatives 4.0 I
 */
 package guru.z3.rnd.gcp.google;
 
+import guru.z3.rnd.gcp.PrinterContext;
 import guru.z3.temple.toolkit.json.JsonTool;
+import javafx.print.Printer;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -33,10 +35,6 @@ public class GoogleContext
 
 	public final static String X_CLOUDPRINT_PROXY	= "zcube";
 
-	private final String printerName = "ZCUBEPRINTER";
-	private RegistrationVO registration;
-	private PrinterVO printer;
-
 	private GoogleContext()
 	{
 
@@ -47,34 +45,19 @@ public class GoogleContext
 		return ctx;
 	}
 
-	public void clear()
+	public void register() throws IOException
 	{
-		this.registration = null;
-		this.printer = null;
-	}
-
-	public RegistrationVO register() throws IOException
-	{
-		clear();
+		PrinterContext pctx = PrinterContext.getInstance();
+		pctx.clear();
 
 		try
 		{
-			/*
-			URIBuilder ub = new URIBuilder("https://www.google.com/cloudprint/register");
-			ub.addParameter("proxy", "");
-			ub.addParameter("printer", this.printerName);
-			ub.addParameter("capabilities", "{\"version\": \"1.0\"}");
-			ub.addParameter("use_cdd", "true");
-
-			URI uri = ub.build();
-			logger.info("/cloudprint/register uri=" + uri);
-			*/
 			HttpPost req = new HttpPost("https://www.google.com/cloudprint/register");
 			req.addHeader("X-CloudPrint-Proxy", X_CLOUDPRINT_PROXY);
 
 			List<NameValuePair> params = new ArrayList(4);
 			params.add(new BasicNameValuePair("proxy", "ZZZ"));
-			params.add(new BasicNameValuePair("printer", this.printerName));
+			params.add(new BasicNameValuePair("printer", pctx.getPrinterName()));
 			params.add(new BasicNameValuePair("capabilities", "{\"version\": \"1.0\"}"));
 			params.add(new BasicNameValuePair("use_cdd", "true"));
 			req.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
@@ -88,16 +71,16 @@ public class GoogleContext
 
 			for ( PrinterVO p : rr.getPrinters() )
 			{
-				if ( this.printerName.equals(p.getName()) )
+				if ( pctx.getPrinterName().equals(p.getName()) )
 				{
-					this.printer = p;
+					pctx.setPrinter(p);
 					break;
 				}
 			}
 
-			if ( this.printer == null ) clear();
+			if ( pctx.getPrinter() == null ) pctx.clear();
 			else
-				this.registration = rr;
+				pctx.setRegistration(rr);
 		}
 		catch(IOException e)
 		{
@@ -107,23 +90,20 @@ public class GoogleContext
 		{
 			throw new IOException(e.getMessage(), e);
 		}
-
-		return this.registration;
 	}
 
 
 	public void getAuthcode(String clientId) throws IOException
 	{
-		if ( this.printer == null || this.registration == null ) throw new IOException("there is no registration");
+		PrinterContext pctx = PrinterContext.getInstance();
+		if ( pctx.getPrinter() == null || pctx.getRegistration() == null ) throw new IOException("there is no registration");
 
 		try
 		{
-			/*
-			URIBuilder ub = new URIBuilder("https://www.google.com/cloudprint/getauthcode");
-			ub.addParameter("printerid", this.printer.getId());
-			ub.addParameter("oauth_client_id", clientId);
-			*/
-			HttpGet httpGet = new HttpGet(this.registration.getPolling_url());
+			String url = pctx.getRegistration().getPolling_url() + pctx.getClientId();
+			logger.info("getAuthcode URL:" + url);
+
+			HttpGet httpGet = new HttpGet(url);
 			httpGet.setHeader("X-CloudPrint-Proxy", X_CLOUDPRINT_PROXY);
 
 			HttpClient client = HttpClients.createDefault();
@@ -142,13 +122,4 @@ public class GoogleContext
 			throw new IOException(e.getMessage(), e);
 		}
 	}
-
-	// GETTER/SETTER methods ===============================
-	public String getPrinterName() { return printerName; }
-
-	public RegistrationVO getRegistration() { return registration; }
-	public void setRegistration(RegistrationVO registration) { this.registration = registration; }
-
-	public PrinterVO getPrinter() { return printer; }
-	public void setPrinter(PrinterVO printer) { this.printer = printer; }
 }

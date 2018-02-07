@@ -1,8 +1,8 @@
 package prototype.mdns;
 
+import guru.z3.rnd.gcp.PrinterContext;
 import guru.z3.rnd.gcp.google.GoogleContext;
 import guru.z3.rnd.gcp.privet.PrivetService;
-import guru.z3.temple.toolkit.ToolKit;
 import guru.z3.temple.toolkit.concurrent.JobRunnable;
 import guru.z3.temple.toolkit.nio.ByteBufferUtils;
 import org.junit.Test;
@@ -84,8 +84,8 @@ public class TestMdns
 	{
 		DatagramChannel mc = null;
 
-		PrivetService psvc = new PrivetService();
-		psvc.start();
+		//PrivetService psvc = new PrivetService();
+		//psvc.start();
 
 		try
 		{
@@ -151,7 +151,7 @@ public class TestMdns
 		buf.putShort((short)0);	// 0 Authority RR
 		buf.putShort((short)0);	// 0 Additional RR
 
-		String printerName = GoogleContext.getContext().getPrinterName();
+		String printerName = PrinterContext.getInstance().getPrinterName();
 		String[] privetNames = new String[] { "_privet", "_tcp", "local" };
 		String[] subtypeNames = new String[] { "_printer", "_sub" };
 
@@ -237,7 +237,7 @@ public class TestMdns
 		buf.putInt(120);				// TTL = 120sec
 
 		buf.putShort((short)0x04);		// RD Length
-		buf.putInt(0x7F000001);	// 127.0.0.1
+		buf.putInt(0x7F000001);			// 127.0.0.1
 
 
 		// 4th answer : AAAA ======
@@ -248,7 +248,7 @@ public class TestMdns
 		buf.putInt(120);				// TTL = 120sec
 
 		buf.putShort((short)0x10);		// RD Length
-		buf.putInt(0x7F000001);	// 127.0.0.1
+		buf.putInt(0x7F000001);			// 127.0.0.1
 		buf.putInt(0x7F000001);
 		buf.putInt(0x7F000001);
 		buf.putInt(0x7F000001);
@@ -266,7 +266,7 @@ public class TestMdns
 		buf.putShort((short)0);	// 0 Authority RR
 		buf.putShort((short)0);	// 0 Additional RR
 
-		String printerName = GoogleContext.getContext().getPrinterName();
+		String printerName = PrinterContext.getInstance().getPrinterName();
 		String[] privetNames = new String[] { "_privet", "_tcp", "local" };
 		String[] subtypeNames = new String[] { "_printer", "_sub" };
 
@@ -496,6 +496,22 @@ public class TestMdns
 		public int stopped(boolean abort)
 		{
 			return 0;
+		}
+	}
+
+	@Test
+	public void testAddress() throws Exception
+	{
+		InetAddress addr = Inet4Address.getByName("127.0.0.1");
+		for ( byte b : addr.getAddress() )
+		{
+			System.out.println(b);
+		}
+
+		addr = Inet6Address.getByName("127.0.0.1");
+		for ( byte b : addr.getAddress() )
+		{
+			System.out.println(b);
 		}
 	}
 }

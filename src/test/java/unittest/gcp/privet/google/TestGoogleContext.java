@@ -37,7 +37,7 @@ public class TestGoogleContext
 				"    \"ZCUBEPRN\"\n" +
 				"   ],\n" +
 				"   \"printerid\": [\n" +
-				"    \"1d54c225-35e2-bc1d-76f9-0be1905230ce\"\n" +
+				"    \"132333-35e2-bbbb-7777-0001115222cc\"\n" +
 				"   ],\n" +
 				"   \"use_cdd\": [\n" +
 				"    \"true\"\n" +
@@ -57,33 +57,34 @@ public class TestGoogleContext
 				"   \"type\": \"GOOGLE\",\n" +
 				"   \"notificationChannel\": \"XMPP_CHANNEL\",\n" +
 				"   \"tags\": [\n" +
-				"    \"__cp_printer_passes_2018_cert__\\u003dUNKNOWN\"\n" +
+				"    \"__cp_printer__\\u003dUNKNOWN\"\n" +
 				"   ],\n" +
 				"   \"gcpVersion\": \"1.0\",\n" +
 				"   \"proxy\": \"ZZZ\",\n" +
 				"   \"createTime\": \"1516772882187\",\n" +
 				"   \"defaultDisplayName\": \"\",\n" +
 				"   \"name\": \"ZCUBEPRN\",\n" +
-				"   \"id\": \"e7513d37-c393-aae9-17b5-ba70e67d5653\",\n" +
+				"   \"id\": \"eeee3d33-cccc-aaaa-1111-bbbbb6665666\",\n" +
 				"   \"status\": \"\",\n" +
 				"   \"accessTime\": \"1516772882187\"\n" +
 				"  }\n" +
 				" ],\n" +
-				" \"complete_invite_url\": \"https://goo.gl/printer/gGkg2\",\n" +
+				" \"complete_invite_url\": \"https://goo.gl/printer/...\",\n" +
 				" \"invite_url\": \"https://www.google.com/cloudprint/claimprinter.html\",\n" +
 				" \"oauth_scope\": \"https://www.googleapis.com/auth/cloudprint\",\n" +
-				" \"invite_page_url\": \"https://www.google.com/cloudprint/regtokenpage?t\\u003dCzaoK\\u0026dpi\\u003d300\\u0026pagesize\\u003d215900,279400\",\n" +
-				" \"registration_token\": \"CzaoK\",\n" +
+				" \"invite_page_url\": \"https://www.google.com/cloudprint/regtokenpage?,279400\",\n" +
+				" \"registration_token\": \"zzzzz\",\n" +
 				" \"token_duration\": \"899\",\n" +
-				" \"automated_invite_url\": \"https://www.google.com/cloudprint/confirm?token\\u003dCzaoK\",\n" +
-				" \"polling_url\": \"https://www.google.com/cloudprint/getauthcode?printerid\\u003de7513d37-c393-aae9-17b5-ba70e67d5653\\u0026oauth_client_id\\u003d\"\n" +
+				" \"automated_invite_url\": \"https://www.google.com/cloudp\",\n" +
+				" \"polling_url\": \"https://www.google.com/cloudprint/getauthcode?printerid\"\n" +
 				"}";
 
+		System.out.println(json);
 		RegistrationVO r = JsonTool.defaultLib().deserialize(json, RegistrationVO.class);
 
 		TestCase.assertEquals(true, r.isSuccess());
-		TestCase.assertEquals("CzaoK", r.getRegistration_token());
-		TestCase.assertEquals("e7513d37-c393-aae9-17b5-ba70e67d5653", r.getPrinters().get(0).getId());
+		TestCase.assertEquals("zzzzz", r.getRegistration_token());
+		TestCase.assertEquals("eeee3d33-cccc-aaaa-1111-bbbbb6665666", r.getPrinters().get(0).getId());
 	}
 
 	@Test
